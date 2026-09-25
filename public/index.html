@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tabungan & Pengeluaran</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💰</text></svg>">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topbar">
+    <h1>💰 Tabungan & Pengeluaran</h1>
+    <div class="month-nav">
+      <button id="prevMonth" class="icon-btn" aria-label="Bulan sebelumnya">‹</button>
+      <input type="month" id="monthPicker" aria-label="Pilih bulan">
+      <button id="nextMonth" class="icon-btn" aria-label="Bulan berikutnya">›</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="cards">
+      <div class="card income"><span>Pemasukan</span><strong id="sumIncome">Rp0</strong></div>
+      <div class="card expense"><span>Pengeluaran</span><strong id="sumExpense">Rp0</strong></div>
+      <div class="card saving"><span>Ditabung bulan ini</span><strong id="sumSaved">Rp0</strong></div>
+      <div class="card remaining"><span>Sisa uang</span><strong id="sumRemaining">Rp0</strong></div>
+      <div class="card balance"><span>Total saldo tabungan</span><strong id="sumBalance">Rp0</strong></div>
+    </section>
+
+    <div class="grid">
+      <section class="panel">
+        <h2 id="formTitle">Tambah Transaksi</h2>
+        <form id="txForm">
+          <div class="type-toggle" role="radiogroup" aria-label="Jenis transaksi">
+            <label><input type="radio" name="type" value="pengeluaran" checked><span>Pengeluaran</span></label>
+            <label><input type="radio" name="type" value="pemasukan"><span>Pemasukan</span></label>
+            <label><input type="radio" name="type" value="tabungan"><span>Setor Tabungan</span></label>
+            <label><input type="radio" name="type" value="tarik"><span>Tarik Tabungan</span></label>
+          </div>
+          <label>Nominal (Rp)
+            <input type="text" name="amount" inputmode="numeric" placeholder="50.000" required autocomplete="off">
+          </label>
+          <label>Kategori
+            <input type="text" name="category" list="categoryList" required maxlength="50" autocomplete="off">
+            <datalist id="categoryList"></datalist>
+          </label>
+          <label>Tanggal
+            <input type="date" name="date" required>
+          </label>
+          <label>Catatan
+            <input type="text" name="note" maxlength="200" placeholder="Opsional">
+          </label>
+          <div class="form-actions">
+            <button type="submit" class="btn primary" id="submitBtn">Simpan</button>
+            <button type="button" class="btn" id="cancelEdit" hidden>Batal</button>
+          </div>
+          <p class="error" id="formError" role="alert"></p>
+        </form>
+      </section>
+
+      <section class="panel">
+        <h2>Pengeluaran per Kategori</h2>
+        <div id="categoryChart" class="bars"></div>
+        <details class="budget-box">
+          <summary>Atur anggaran bulan ini</summary>
+          <form id="budgetForm" class="inline-form">
+            <input type="text" name="category" list="expenseCategoryList" placeholder="Kategori" required maxlength="50">
+            <datalist id="expenseCategoryList"></datalist>
+            <input type="text" name="amount" inputmode="numeric" placeholder="Batas (0 = hapus)" required>
+            <button class="btn primary" type="submit">Simpan</button>
+          </form>
+        </details>
+      </section>
+    </div>
+
+    <section class="panel">
+      <div class="panel-head">
+        <h2>Transaksi <span id="txCount" class="muted"></span></h2>
+        <div class="panel-tools">
+          <select id="filterType" aria-label="Filter jenis">
+            <option value="">Semua jenis</option>
+            <option value="pemasukan">Pemasukan</option>
+            <option value="pengeluaran">Pengeluaran</option>
+            <option value="tabungan">Setor Tabungan</option>
+            <option value="tarik">Tarik Tabungan</option>
+          </select>
+          <input type="search" id="searchBox" placeholder="Cari…" aria-label="Cari transaksi">
+          <a id="exportLink" class="btn" href="#">Ekspor CSV</a>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Tanggal</th><th>Jenis</th><th>Kategori</th><th>Catatan</th><th class="num">Nominal</th><th></th></tr>
+          </thead>
+          <tbody id="txBody"></tbody>
+        </table>
+      </div>
+      <p id="emptyState" class="muted empty" hidden>Belum ada transaksi di bulan ini.</p>
+    </section>
+
+    <section class="panel">
+      <h2>Target Tabungan</h2>
+      <form id="goalForm" class="inline-form">
+        <input type="text" name="name" placeholder="Nama target (mis. Dana Darurat)" required maxlength="60">
+        <input type="text" name="target" inputmode="numeric" placeholder="Target (Rp)" required>
+        <input type="date" name="deadline" aria-label="Tenggat (opsional)">
+        <button class="btn primary" type="submit">Tambah Target</button>
+      </form>
+      <div id="goalList" class="goals"></div>
+    </section>
+  </main>
+
+  <footer>Data tersimpan secara lokal di komputer Anda (<code>data/db.json</code>).</footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
