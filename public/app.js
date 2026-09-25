@@ -326,13 +326,34 @@ async function onMonthChange() {
   try { await loadMonth(); } catch (err) { alert(err.message); }
 }
 
+// Ditampilkan jika halaman dibuka langsung dari file (index.html diklik dua kali)
+// atau server belum berjalan, supaya pengguna tahu harus menjalankan server.
+function showStartupHelp(reason) {
+  const box = document.createElement('div');
+  box.className = 'startup-help';
+  box.innerHTML = `<strong>Aplikasi belum terhubung ke server.</strong>
+    <p>${reason}</p>
+    <ol>
+      <li>Buka folder aplikasi, lalu klik dua kali <code>start.bat</code> (Windows) atau <code>start.command</code> (macOS).<br>
+        Atau buka Terminal/Command Prompt di folder ini dan jalankan <code>npm start</code>.</li>
+      <li>Biarkan jendela server tetap terbuka.</li>
+      <li>Buka alamat yang muncul di jendela itu, biasanya <a href="http://localhost:3000">http://localhost:3000</a>.</li>
+    </ol>`;
+  document.querySelector('main').prepend(box);
+}
+
 async function init() {
+  if (location.protocol === 'file:') {
+    showStartupHelp('Halaman ini dibuka langsung dari file, bukan lewat server.');
+    return;
+  }
   bindEvents();
   $('#txForm').elements.date.value = defaultDate();
   try {
     await Promise.all([loadMonth(), loadGoals()]);
   } catch (err) {
-    alert('Gagal memuat data: ' + err.message);
+    if (err instanceof TypeError) showStartupHelp('Server tidak merespons. Mungkin jendela server sudah ditutup.');
+    else alert('Gagal memuat data: ' + err.message);
   }
 }
 

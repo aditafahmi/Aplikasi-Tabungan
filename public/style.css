@@ -188,3 +188,14 @@ td[class*="amt-"] { color: var(--c); font-weight: 600; }
 .goal-actions { display: flex; flex-wrap: wrap; gap: 6px; }
 
 footer { text-align: center; color: var(--muted); font-size: 0.8rem; padding: 0 16px 24px; }
+
+.startup-help {
+  background: var(--surface);
+  border: 2px solid var(--withdraw);
+  border-radius: var(--radius);
+  padding: 16px 20px;
+}
+.startup-help p { margin: 6px 0; }
+.startup-help ol { margin: 8px 0 0; padding-left: 20px; }
+.startup-help li { margin-bottom: 6px; }
+.startup-help a { color: var(--primary); }

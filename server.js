@@ -8,9 +8,9 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const { exec } = require('child_process');
 
 const PORT = Number(process.env.PORT) || 3000;
-const HOST = process.env.HOST || '127.0.0.1';
 const DATA_FILE = process.env.DATA_FILE || path.join(__dirname, 'data', 'db.json');
 const PUBLIC_DIR = path.join(__dirname, 'public');
 
@@ -295,7 +295,7 @@ function serveStatic(req, res, url) {
   });
 }
 
-const server = http.createServer(async (req, res) => {
+async function handleRequest(req, res) {
   const url = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
   if (url.pathname.startsWith('/api/')) {
     try {
@@ -309,12 +309,82 @@ const server = http.createServer(async (req, res) => {
   }
   if (req.method !== 'GET' && req.method !== 'HEAD') return send(res, 405, { error: 'Metode tidak diizinkan' });
   serveStatic(req, res, url);
-});
+}
+
+const server = http.createServer(handleRequest);
+
+// ---------- Menjalankan server ----------
+
+function listen(srv, port, host) {
+  return new Promise((resolve, reject) => {
+    const onError = (err) => { srv.off('listening', onListening); reject(err); };
+    const onListening = () => { srv.off('error', onError); resolve(); };
+    srv.once('error', onError);
+    srv.once('listening', onListening);
+    srv.listen(port, host);
+  });
+}
+
+function closeServer(srv) {
+  return new Promise((resolve) => srv.close(() => resolve()));
+}
+
+// Browser bisa mengartikan "localhost" sebagai 127.0.0.1 (IPv4) atau ::1 (IPv6),
+// jadi secara default server mendengarkan di keduanya. Jika port sedang dipakai
+// aplikasi lain, otomatis mencoba port berikutnya.
+async function start() {
+  const hosts = process.env.HOST ? [process.env.HOST] : ['127.0.0.1', '::1'];
+  const fixedPort = Boolean(process.env.PORT);
+  for (let port = PORT; port < PORT + 20; port++) {
+    const servers = [];
+    try {
+      for (const [i, host] of hosts.entries()) {
+        const srv = i === 0 ? server : http.createServer(handleRequest);
+        try {
+          await listen(srv, port, host);
+          servers.push(srv);
+        } catch (err) {
+          // IPv6 tidak tersedia di komputer ini: cukup pakai IPv4.
+          if (i > 0 && ['EADDRNOTAVAIL', 'EAFNOSUPPORT', 'EINVAL'].includes(err.code)) continue;
+          throw err;
+        }
+      }
+      return port;
+    } catch (err) {
+      await Promise.all(servers.map(closeServer));
+      if (err.code === 'EADDRINUSE' && !fixedPort) {
+        console.log(`Port ${port} sedang dipakai aplikasi lain, mencoba port ${port + 1}...`);
+        continue;
+      }
+      throw err;
+    }
+  }
+  throw new Error(`Tidak ada port kosong antara ${PORT} dan ${PORT + 19}`);
+}
+
+function openBrowser(url) {
+  const cmd = process.platform === 'win32' ? `start "" "${url}"`
+    : process.platform === 'darwin' ? `open "${url}"`
+    : `xdg-open "${url}"`;
+  exec(cmd, () => {}); // Jika gagal, pengguna tetap bisa membuka URL secara manual.
+}
 
 if (require.main === module) {
-  server.listen(PORT, HOST, () => {
-    console.log(`Aplikasi Tabungan berjalan di http://localhost:${PORT}`);
-    console.log(`Data disimpan di ${DATA_FILE}`);
+  start().then((port) => {
+    const url = `http://localhost:${port}`;
+    console.log('');
+    console.log('  Aplikasi Tabungan sudah berjalan!');
+    console.log(`  Buka di browser: ${url}`);
+    console.log(`  Data disimpan di: ${DATA_FILE}`);
+    console.log('');
+    console.log('  Jangan tutup jendela ini selama aplikasi dipakai. Tekan Ctrl+C untuk berhenti.');
+    console.log('');
+    if (process.argv.includes('--open')) openBrowser(url);
+  }).catch((err) => {
+    if (err.code === 'EADDRINUSE') console.error(`Port ${PORT} sedang dipakai. Coba port lain, mis. PORT=8080.`);
+    else if (err.code === 'EACCES') console.error(`Tidak punya izin memakai port ${PORT}. Coba port di atas 1024.`);
+    else console.error('Gagal menjalankan server:', err.message);
+    process.exit(1);
   });
 }
 

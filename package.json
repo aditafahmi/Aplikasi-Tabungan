@@ -4,7 +4,8 @@
   "description": "Aplikasi pencatat tabungan dan pengeluaran bulanan yang berjalan di localhost",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
+    "start": "node server.js --open",
+    "serve": "node server.js",
     "test": "node --test"
   },
   "engines": {
